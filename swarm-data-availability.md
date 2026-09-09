@@ -159,7 +159,10 @@ recorded in `docs/plans/P1-federated-book.md` §6 to §7:
   had 4,270 reachable full nodes and 1,939 staking, itself down from
   December, so reachable nodes fell about 14% in eight months
   (swarmscan does not expose a live staking count; the January figure
-  stands). A hosting outage is a correlated failure that replication
+  stands). The reachable figure is noisy day to day: 3,068 on
+  2026-09-10 against 3,692 the day before, with the country split
+  moving too, so quote it with its date and prefer the Foundation's
+  monthly series for trend. A hosting outage is a correlated failure that replication
   math ignores. Our mitigation is one
   self-hosted always-on pinning node. A DA pitch has to state this
   plainly and show the erasure-coding and pinning story that offsets it.
@@ -520,6 +523,13 @@ follower-rebuild pattern stay.
   (<https://api.blobscan.com/stats/timeseries?timeFrame=30d>, read
   2026-09-09; the same data drives <https://blobscan.com/stats>); fee
   floor rule EIP-7918 (<https://eips.ethereum.org/EIPS/eip-7918>).
+  Units: the chart on blobscan.com/stats plots the bare blob gas price
+  per unit of blob gas (about 0.006 gwei a day in early September 2026);
+  the per-blob dollar figures here use blobscan's `avgBlobFee`, which
+  also includes the carrier transaction's execution gas, so they read
+  slightly higher than gas price × 131,072. The two do not disagree.
+  `scripts/refresh_numbers.py` in this repo pulls every figure in this
+  section and the Swarm and price figures in one run.
 - Historical DA costs: Conduit, "Data availability costs: Ethereum
   blobs vs. Celestia", 2024-10-23
   (<https://www.conduit.xyz/blog/data-availability-costs-ethereum-blobs-celestia/>);
@@ -569,3 +579,40 @@ follower-rebuild pattern stay.
   (postage economics, feed CAS, network state, erasure coding) and
   `docs/plans/proof-fabric.md` §1 (POT verifier, gas), both with their
   own citations.
+
+---
+
+## Appendix: the rollup vocabulary, for a Swarm audience
+
+Loopmarket's shape is easiest to explain to people who know rollups,
+provided the one inversion is stated.
+
+- **Rollup-like for reads.** Full state off-chain in a canonical trie,
+  a 32-byte root anchored on chain, a contract that accepts claims only
+  with proofs against that root. Because the bytes go to Swarm rather
+  than into Ethereum calldata, the closest named variant is a
+  *validium*, and it inherits the validium's known weakness: if the
+  data layer loses the bytes, the root is unverifiable. §4 is about
+  closing that weakness.
+- **An ordinary contract for the one write.** In a rollup the state
+  transition happens off-chain and the contract verifies a proof of it.
+  In loopmarket the contract performs the decisive transition itself:
+  it checks per-leg inclusion and fill-absence proofs and records the
+  fills. Everything else in the book, offers and tombstones, is speech
+  that needs no chain at all.
+- **Solvers as permissionless sequencing.** A rollup sequencer picks
+  the next batch. Solvers do that job here, in competition, sealed, with
+  a deterministic selection deciding whose batch wins and one clearing
+  commit per beat. That resembles based or shared sequencing more than
+  a single operator, and it is why two incompatible proposals in one
+  block never race: selection resolves them before anything reaches the
+  contract.
+- **Optimistic pieces where proofs run out.** Re-execution certificates
+  are closer to fraud-proof-style re-execution than to validity proofs.
+  Settlement, the makers actually delivering, is adjudicated
+  optimistically through factbond's bonded assertions and challenge
+  windows, because no proof can settle "did the lesson happen".
+- **Not a sidechain.** Loopmarket runs no consensus of its own; it
+  borrows Gnosis's ordering and finality. Swarm likewise runs no
+  consensus for availability, which is exactly why §4.1's receipts need
+  a chain anchor to say *when*.
