@@ -27,6 +27,12 @@ commit, settlement = delivery). File paths in this memo refer to the
 loopmarket repository (github.com/petfold/loopmarket) unless another
 repository is named; the memo itself lives in its own folder,
 `swarm-da/`, beside that repository.
+Addendum 2026-09-11: §3.5 adds the axis the landscape table lacks —
+ordering and throughput — with 2026 capacities measured against
+card-network volume and Swarm's own reserve as the yardstick, and §5
+gains a second consumer shape for receipts. Both come from the
+loopmarket discussion recorded in its `docs/plans/P1-federated-book.md`
+§4a ("anchoring offers on chain").
 
 ---
 
@@ -194,6 +200,100 @@ Two readings of the table:
   the only purpose-built one, and Arweave the only durable generalist.
   Neither has renewable, permissionlessly-fundable, per-object
   retention.
+
+## 3.5 The other axis: ordering and throughput (added 2026-09-11)
+
+§1's four promises are about *bytes*: released, retrievable, committed,
+priced. A marketplace asked a fifth question of the same substrates,
+recorded in loopmarket's `P1-federated-book.md` §4a: **who orders the
+events?** An offer's withdrawal racing its clearing, a beat's cutoff, an
+aggregator's omission — each needs a total order, and none of §1's
+promises supplies one. The incumbents bundle ordering with publication
+(a blob is *in a block*; Celestia orders the blobs it samples). EigenDA
+does not: the rollup orders, the committee attests. Swarm does not
+either: feeds are single-writer, GSOC is many-to-one with no delivery
+order, and the redistribution game orders nothing. So the question
+became *what must a chain hold so that Swarm can hold the rest*, and the
+answer sizes both halves.
+
+**What a marketplace puts where.** The unit of commitment is a 32-byte
+content address, the offer id. The body — 571 bytes canonical, measured
+on a real offer — goes to Swarm; the id goes wherever ordering is bought:
+~25k gas and ~240 bytes as a standalone L1 transaction (envelope, 65-byte
+signature, log), ~120 bytes compressed inside a rollup batch (signatures
+do not compress), ~50 bytes only with signature aggregation, which is a
+batcher. Yardstick: card-network volume — Visa processed 257.5 B
+transactions in FY2025 (~8,200/s average), Mastercard switched ~178 B in
+2025 (~5,600/s); peaks run 2–3× average. At the combined 13,800/s the
+ids are ~1.7 MB/s to a chain and the bodies ~7 MB/s, ~220 TB a year, to
+Swarm. **The ordering layer carries 5% of the bytes and the data layer
+95%** — the memo's thesis in one number.
+
+| substrate (2026) | per-object anchors/s | ordering, permission | window | Visa 8,200/s | both 13,800/s |
+|---|---|---|---|---|---|
+| Gnosis L1 (30M gas / 5 s; 0.01 gwei) | ~240 | permissionless validators | history, forever | 34× over | 58× over |
+| Ethereum L1 (60M gas; 200M with Glamsterdam, H2 2026) | ~200 → ~670 | permissionless | history, expiring | 12× over | 21× over |
+| Ethereum blobs (14/21 since 2026-01-07; 48 planned mid-2026; 128 at full danksharding) | ~1,240 → ~4,300 → ~11,400 | shared by every rollup; each rollup's sequencer orders | ~18 days | fits only at 128 | 1.2× over at 128 |
+| Arbitrum One (7M gas/s) | ~280, blob-bound | one sequencer; forced inclusion ≈ 1 day | blobs | no | no |
+| Base (125–150 Mgas/s; 400–500 targeted 2026) | 5,000–20,000 execution, blob-bound | one sequencer; forced inclusion ≈ 12 h | blobs | execution yes, DA no until 48+ blobs | no until danksharding |
+| Hedera Consensus Service | 10,000 governed cap; bursts 16,000 | hashgraph aBFT, fair ordering, built as exactly this service; **council-run nodes**; $0.0008/message since 2026-01 | mirror nodes | at average, not peak | no |
+| Solana | 1,600–3,800 sustained real; Alpenglow, Firedancer pending | permissionless, heavy hardware | history | no today | no |
+| Celestia (8 MB / 6 s; 21 MB/s on testnet) | ~11,000 as DA | permissionless DA; orders its blobs; execution in a rollup | 7 days | fits | 1.25× over |
+| EigenDA V2 (100 MB/s) | ~800,000 as DA | a committee — an aggregator | 14 days | fits | fits |
+| **Swarm** | **n/a — no ordering** | — | as long as stamped; renewable by anyone | bodies 7 MB/s: see the reserve yardstick below | |
+
+Three readings, in the order they matter for this memo:
+
+1. **Short-window layers sell ordering *and* publication.** That is what a
+   marketplace rents from them, and it is the half Swarm cannot offer:
+   Swarm's retention sits *behind* an ordering layer, never in place of
+   one. §0's "own the window they abandon" is the same statement from the
+   other side.
+2. **At scale everyone batches, then anchors — and the batcher is the
+   question.** Per-object anchors on Gnosis or Base carry a marketplace
+   for years (a few hundred to a few thousand objects a second). Card
+   volume on any substrate means a batcher orders, posts a root, and the
+   base chain holds the escape hatch: one sequencer is one aggregator; a
+   shared sequencer (Espresso, Astria) or a BFT/hashgraph run by the
+   several aggregators a censorship-proof market needs anyway is a plural
+   one. The root they anchor is precisely the artifact §4.1's receipt
+   certifies — so **a receipt primitive has a second consumer**: not only
+   "these bytes were released by T" but "this root, in this order". When
+   the batcher writes to Swarm first, the DA receipt *is* the per-root
+   anchor (§5).
+3. **The proof-in-calldata shape (§2) has its own ceiling.** A clearing
+   leg with a trie inclusion proof costs ~900 bytes and ~100k gas — more
+   than anchoring the object it proves. At card scale that is 7 MB/s of
+   proof data, five times full danksharding, so the validium's proofs
+   must aggregate into a validity proof with only the state diff landing.
+   §4.5's per-path gas headline therefore rules the small end, and the
+   BMT verifier is the per-leg building block whose *aggregation* cost
+   decides the large end.
+
+**Swarm's own capacity, as the yardstick demands.** Bee's
+`DefaultReserveCapacity` is 2²² = 4,194,304 chunks, 16 GiB per node
+(`pkg/storer/storer.go`, master, read 2026-09-11). Every node in a
+neighbourhood holds that neighbourhood's whole share, so with the 256
+neighbourhoods swarmscan showed on 2026-09-09 (§2) the network's *unique*
+live reserve is about 256 × 16 GiB ≈ **4 TiB**, from roughly 60 TiB raw
+across ~3,800 nodes — about 15× replication, before caches and pins,
+which do not count toward DA. A card-scale marketplace's *live* body set
+— offers standing ~30 days — is ~18 TB, four to five times today's whole
+reserve; the cumulative year is fifty times. Reserve capacity grows only
+with nodes (one more bit of depth doubles it), so at that scale Swarm's
+constraint is node count, not protocol: §2's "thin and shrinking" finding
+with the demand side now quantified. Two things are structural in
+Swarm's favour: postage TTL makes the *live* set the load rather than the
+cumulative one (the marketplace's friend, §2 — a card-scale book expires
+as fast as it grows), and the pruning incumbents hit the same wall from
+the other side — Ethereum's 128-blob endgame publishes 1.4 MB/s and then
+forgets it after eighteen days, so the bodies still need a home, which
+is §0's point.
+
+Disposition (loopmarket, 2026-09-11): not urgent at zero volume, and the
+substrate table will be stale before it matters. Recorded so the two axes
+are not confused again: **retention is Swarm's to sell; ordering is
+rented.**
 
 ## 4. What Swarm would need to add
 
@@ -366,6 +466,13 @@ a differentiator.
   the follower that rebuilds a book from nothing but a feed address,
   and the planned expiry experiment. We can run §4.4 for a first
   rollup's blobs within weeks.
+- **A second consumer shape for receipts** (added 2026-09-11). Loopmarket's
+  anchoring alternative (`P1-federated-book.md` §4a) ends, at scale, at
+  "batch, then anchor a root". A receipt saying "chunk set with root R
+  was released by T" *is* that anchor whenever the batcher writes to
+  Swarm first; the same primitive then serves ordering as well as
+  availability, and §3.5 sizes the demand for it — ids at 5% of the
+  bytes, bodies at 95%.
 - **GSOC experience.** Solar Punk's `@solarpunkltd/gsoc` is the
   announcement channel in P1; a mirror pipeline needs the same
   many-to-one channel to publish mappings.
@@ -502,6 +609,30 @@ follower-rebuild pattern stay.
 
 ## Sources
 
+- §3.5 substrates and volumes (all read 2026-09-11): Ethereum
+  Foundation, "Checkpoint #8", 2026-01-20
+  (<https://blog.ethereum.org/2026/01/20/checkpoint-8>) and "Protocol
+  priorities update for 2026", 2026-02-18
+  (<https://blog.ethereum.org/2026/02/18/protocol-priorities-update-2026>);
+  ethereum.org, PeerDAS (<https://ethereum.org/roadmap/fusaka/peerdas/>);
+  The Defiant, Glamsterdam 200M gas target
+  (<https://thedefiant.io/news/blockchains/ethereum-glamsterdam-final-devnet-200m-gas-limit-target>);
+  Base gas limit to 125 Mgas/s and 2026 targets
+  (<https://finance.yahoo.com/news/network-increases-gas-limit-125-190944252.html>);
+  Arbitrum gas speed limit
+  (<https://docs.arbitrum.io/launch-orbit-chain/maintain-your-chain/guidance/state-size-limit>);
+  GnosisScan gas tracker (<https://gnosisscan.io/gastracker>); Hedera,
+  ConsensusSubmitMessage price update, 2026-01
+  (<https://hedera.com/blog/price-update-to-consensussubmitmessage-in-consensus-service-january-2026/>)
+  and throttling (<https://hedera.com/blog/throttling-in-hedera-ensuring-stability-and-fairness/>);
+  Solana real TPS (<https://cryptobriefing.com/solana-true-tps-surpasses-2500/>);
+  DA layer throughput 2026
+  (<https://blockeden.xyz/blog/2026/02/24/modular-blockchain-wars-data-availability/>);
+  Visa FY2025 (<https://www.electronicpaymentsinternational.com/news/visa-fy25-net-income/>);
+  Mastercard Q3 2025
+  (<https://www.digitaltransactions.net/a-strong-economy-lifts-mastercards-transaction-volumes-as-well-as-its-top-and-bottom-lines/>);
+  Bee `DefaultReserveCapacity`
+  (<https://github.com/ethersphere/bee/blob/master/pkg/storer/storer.go>).
 - Blob retention and KZG persistence: ChainScore,
   "EIP-4844 blob retention rules"
   (<https://chainscorelabs.com/blog/the-ethereum-roadmap-merge-surge-verge/proto-danksharding/blob-retention-rules-introduced-by-eip-4844>);
