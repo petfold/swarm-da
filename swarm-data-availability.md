@@ -279,10 +279,14 @@ live reserve is about 256 × 16 GiB ≈ **4 TiB**, from roughly 60 TiB raw
 across ~3,800 nodes — about 15× replication, before caches and pins,
 which do not count toward DA. A card-scale marketplace's *live* body set
 — offers standing ~30 days — is ~18 TB, four to five times today's whole
-reserve; the cumulative year is fifty times. Reserve capacity grows only
-with nodes (one more bit of depth doubles it), so at that scale Swarm's
-constraint is node count, not protocol: §2's "thin and shrinking" finding
-with the demand side now quantified. Two things are structural in
+reserve; the cumulative year is fifty times. Reserve capacity grows
+with nodes (one more bit of depth doubles it), and Swarm is designed so
+that node count follows demand: postage revenue is what recruits storers,
+so a card-scale book is not a ceiling but the incentive the network was
+built to answer. Today's figure is the supply side of §2's "thin and
+shrinking" finding with the demand side now quantified; the question it
+poses is how fast the storer population can follow a demand step, not
+whether the protocol allows it. Two things are structural in
 Swarm's favour: postage TTL makes the *live* set the load rather than the
 cumulative one (the marketplace's friend, §2 — a card-scale book expires
 as fast as it grows), and the pruning incumbents hit the same wall from
