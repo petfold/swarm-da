@@ -519,6 +519,33 @@ layer supplies. Receipts prove acceptance by a handful of staked nodes,
 not availability to everyone, so chain-as-authority and the
 follower-rebuild pattern stay.
 
+### 5.1 What the proposal would give loopmarket back (added 2026-09-11)
+
+The ask is framed for rollups; this is the consumer's own ledger,
+ranked by how directly each item lands on a problem loopmarket's
+`P1-federated-book.md` already names. Unevenly is the honest word.
+
+| memo item | effect on loopmarket | the named problem it touches |
+|---|---|---|
+| §4.3 feed-head hardening | **Large.** Every maker's book head is one feed chunk with best-effort compare-and-set — the weak link P1 §7 works around by never letting authority rest on a feed. | shared-book demotion; one-signer-per-feed as the safety model |
+| §4.4 a measured retrieval service level | **Large.** P1's open gates are read latency and durability; a published level turns them from experiments into a target, and prices the solver's cold-read path. | read-latency and durability gates |
+| §4.1 publication receipts | **Substantial, for *time*.** A receipt proves a body was released by T: "I published before the cutoff and was excluded" becomes adjudicable, the resurrection-window question gets a clock, and the "anchoring in time" P1 §3 leaves to factbond is supplied. It does **not** order events across makers — receipts are timestamps from different storer nodes, not a consensus — so ordering stays rented from a chain (§3.5). | batch-auction cutoff disputes; T14 from the maker's side; resurrection windows |
+| permissionless top-up (exists) | **Already load-bearing.** A solver keeps alive the offers it profits from; loopmarket relies on it today. | postage economics; TTL as the offer's lifetime |
+| §4.6 pricing in the buyer's units | **Modest.** A byte-time price in stable units lets a maker size validity against cost. | postage economics |
+| §4.5 BMT verifier and gas | **Conditional.** `proof-fabric.md` decided trie proofs first; a BMT verifier matters only if the on-chain verifier ends up demanding native proofs. | the proof-fabric decision rule |
+| §4.2 blob-mirror pipeline with bonded binding | **Neutral.** The binding solves a KZG-to-BMT mismatch rollups have; loopmarket's canonical roots over Swarm *are* Swarm references, so none is needed. Exercising factbond helps indirectly. | none directly |
+
+Two things adoption would not change. Clearing trusts nothing from
+Swarm now and would trust nothing after — U3 is untouched. And a follower
+can still find that bodies lapsed with their batch: receipts and a
+service level make that visible and disputable; only top-up prevents it.
+
+So the memo's two headline items (§4.1, §4.2) help rollups most, and the
+two quieter ones (§4.3, §4.4) help loopmarket most. Receipts sit between:
+they give loopmarket the clock it lacks, and at the per-root rung of
+§3.5's anchoring ladder they become the anchor itself — but the total
+order still comes from a chain.
+
 ## 6. Honest counter-arguments
 
 - **The cold-archive economics objection (the 2024 thread's verdict).**
